@@ -243,14 +243,14 @@ public:
     constexpr Slice &operator=(const Slice &) noexcept = default;
 
     constexpr Slice<T, std::dynamic_extent, dynamic_stride> Skip(std::ptrdiff_t skip) {
-        int new_extent = (int) (extent_.get_extent() / skip);
+        int new_extent = (int) ((Size()+skip-1) / skip);
         return Slice<element_type, std::dynamic_extent, dynamic_stride>(Data(), new_extent, Stride() * skip);
     }
 
     template<std::ptrdiff_t skip>
-    constexpr Slice<element_type, extent != -1 ? extent / skip : extent, skip * stride> Skip() requires (stride != -1) {
-        int new_extent = Size() / skip;
-        return Slice<element_type, extent != -1 ? extent / skip : extent, skip * stride>(Data(), new_extent,
+    constexpr Slice<element_type, extent != -1 ? (extent+skip-1) / skip : extent, skip * stride> Skip() requires (stride != -1) {
+        int new_extent = (Size()+skip-1) / skip;
+        return Slice<element_type, extent != -1 ? (extent+skip-1) / skip : extent, skip * stride>(Data(), new_extent,
                                                                                          Stride() * skip);
     }
 
