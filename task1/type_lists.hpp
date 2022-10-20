@@ -119,20 +119,21 @@ namespace type_lists
     template <size_t N, typename T>
     using Take = typename Help_struct_for_take<N, T>::Type;
 
-    template <size_t N, typename T>
-    requires(TypeSequence<T> || std::same_as<T, Nil>) struct Drop_
-    {
+    template<size_t N, typename T>
+    struct Drop_ {
         using Type = typename Drop_<N - 1, typename T::Tail>::Type;
     };
-    template <typename T>
-    requires(TypeSequence<T>) struct Drop_<0, T>
-    {
+    template<typename T>
+    struct Drop_<0, T> {
         using Type = T;
     };
 
-    template <int N>
-    struct Drop_<N, Nil>
-    {
+    template<int N>
+    struct Drop_<N, Nil> {
+        using Type = Nil;
+    };
+    template<>
+    struct Drop_<0, Nil> {
         using Type = Nil;
     };
 
