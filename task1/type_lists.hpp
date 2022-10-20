@@ -119,7 +119,7 @@ namespace type_lists
     template <size_t N, typename T>
     using Take = typename Help_struct_for_take<N, T>::Type;
 
-    template<size_t N, typename T>
+    template<int N, typename T>
     struct Drop_struct {
         using Type = typename Drop_struct<N - 1, typename T::Tail>::Type;
     };
@@ -137,7 +137,7 @@ namespace type_lists
         using Type = Nil;
     };
 
-    template <size_t N, typename T>
+    template <int N, typename T>
     using Drop = typename Drop_struct<N, T>::Type;
 
     template <size_t N, typename T>
