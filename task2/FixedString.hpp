@@ -32,7 +32,7 @@ struct FixedString {
         return p;
     }
 
-    constexpr friend auto operator<=>(const FixedString &f, const FixedString &s) = default;
+    //constexpr friend auto operator<=>(const FixedString &f, const FixedString &s) = default;
 };
 
 template<FixedString a>
@@ -40,15 +40,16 @@ constexpr auto operator ""_cstr() {
     return a;
 }*/
 
+
 template<std::size_t max_length>
 struct BufferString {
-    char buffer_[std::min(256ull, max_length)];
+    char buffer_[std::min(256ul, max_length)];
 
     constexpr BufferString() noexcept = default;
 
 
     constexpr BufferString(const char (&str)[max_length]) {
-        std::ranges::copy(str, &str[std::min(256ull, max_length)], buffer_);
+        std::ranges::copy(str, &str[std::min(256ul, max_length)], buffer_);
         //        std::ranges::copy(str, str+max_length-1, buffer_);
     }
 
@@ -68,7 +69,7 @@ struct FixedString {
         std::ranges::copy(view, b);
     }
 
-    char b[std::min(N, 256ull)];
+    char b[std::min(N, 256ul)]{};
     std::size_t length = N;
 
     template<std::size_t M>
