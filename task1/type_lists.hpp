@@ -431,6 +431,37 @@ namespace type_lists
     };
     template <typename... TL>
     using Zip = typename base_zip<TL...>::Type;
+    
+    template<bool b, template<class, class> typename EQ, typename T, typename TL>
+    struct Equal_Head {
+        using Block = Nil;
+        using Remain_tail = TL;
+    };
+    template<template<class, class> typename EQ, typename T, typename TL>
+    struct Equal_Head<true, EQ, T, TL> {
+        using helper = Equal_Head<EQ<T, typename TL::Tail::Head>::Value, EQ, T, typename TL::Tail>;
+        using Block = Cons<typename TL::Head, typename helper::Block>;
+        using Remain_tail = typename helper::Remain_tail;
+    };
 
+    template<template<class, class> typename EQ, typename T, typename TL>
+    struct Equal_Head<true, EQ, T, Cons<TL, Nil>> {
+
+        using Block = Cons<TL, Nil>;
+        using Remain_tail = Nil;
+    };
+    template<template<class, class> typename EQ, typename TL>
+    struct GroupBy {
+        using now_block = Equal_Head<true, EQ, typename TL::Head, TL>;
+        using Head = typename now_block::Block;
+        using Tail = GroupBy<EQ, typename now_block::Remain_tail>;
+    };
+
+    template<template<class, class> typename EQ, typename T>
+    struct GroupBy<EQ, Cons<T, Nil>> {
+        using Head = Cons<T, Nil>;
+        using Tail = Nil;
+    };
+    
 }; // namespace type_lists
 
