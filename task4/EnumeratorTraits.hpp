@@ -125,7 +125,7 @@ constexpr auto index_combining(std::integral_constant<std::size_t, N>, std::size
 
 template<class E>
 constexpr auto index_combining1(std::integral_constant<std::size_t, EnumeratorTraits<E>::size()>, std::size_t) {
-    return "Blyat";
+    return "Gera";
 }
 
 template<class E, auto N>
@@ -154,7 +154,7 @@ struct EnumeratorTraits {
         if constexpr (get_Right_Name(helper<Enum(-512)>()) == "VALUE_N_512") {
             return Enum(i - 512);
         } else {
-            return index_combining<Enum>(std::integral_constant<std::size_t, std::size_t(0)>{}, i);
+            return index_combining<Enum>(std::integral_constant<std::size_t, std::size_t(0)>{}, size_ - 1 - i);
         }
     }
 
@@ -1187,7 +1187,7 @@ struct EnumeratorTraits {
             if (i == 1024) return "VALUE_512";
             return "aaaa";
         } else {
-            return get_Right_Name(index_combining1<Enum>(std::integral_constant<std::size_t, std::size_t(0)>{}, i));
+            return get_Right_Name(index_combining1<Enum>(std::integral_constant<std::size_t, std::size_t(0)>{}, size_ - 1 - i));
         }
     }
 
