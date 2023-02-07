@@ -130,11 +130,6 @@ struct my_iterator : std::iterator<std::random_access_iterator_tag, T, int> {
     const T* base() const {
         return pointer;
     }
-    /*friend bool operator ==(my_iterator<T> &a, my_iterator<T> &b);
-    friend void swap(my_iterator<T>& a, my_iterator<T>& b);
-    friend bool operator<=>(my_iterator<T> &a, my_iterator<T> &b);
-    friend my_iterator<T> operator+(my_iterator<T> &a, int n);
-    friend my_iterator<T> operator-(my_iterator<T> &a, int n);*/
 };
 
 template<typename T>
