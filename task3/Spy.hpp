@@ -127,7 +127,7 @@ public:
     /*requires  see task readme */
     void setLogger(Logger &&logger) requires ((!std::copyable<T> || std::copyable<std::remove_reference_t<Logger>>) &&
                                               (!std::movable<T> || std::movable<std::remove_reference_t<Logger>>)) {
-        logger_ptr_ = std::shared_ptr<Base_Logger>(new Derived_Logger<Logger>(std::forward<Logger>(logger)));
+        logger_ptr_ = new Derived_Logger<Logger>(std::forward<Logger>(logger));
     }
 
     ~Spy() {
