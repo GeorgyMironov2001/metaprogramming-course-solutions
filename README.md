@@ -1,29 +1,21 @@
-Задача 1. Endless laziness
+Задача 1. Бесконечная лень
 ========================
 
-## Problem
+## Задача
 
-### Working with infinite lists of types
+### Работа с бесконечными списками типов
 
-Consider the following concept.
+Рассмотрим следующий концепт.
 
 ```c++
 
-template<class TL>
-concept TypeSequence =
-    requires {
-        typename TL::Head;
-        typename TL::Tail;
+	@@ -17,23 +17,23 @@ concept TypeSequence =
     };
 ```
-
-It is claimed to describe *infinite sequences of types*. `TL::Tail` is also implicitly required to satisfy the `TypeSequence` concept, but it is probably not possible to model this in C++20.
-
-But how can the type sequence be infinite if the memory in the compiler is finite?
-
-The answer is the same as in functional languages: lazy computation. The compiler lazily instantiates class template members, including aliases like Tail, which means they can even refer to the current template, but with different arguments.
-
-Example:
+Утверждается, что он описывает *бесконечные последовательности типов*. От `TL::Tail` также неявно требуется удовлетворять концепту `TypeSequence`, однако смоделировать это на C++20 скорее всего не возможно.
+Но как последовательность типов может быть бесконечной, если памяти в компиляторе конечно?
+Ответ такой же, как и в функциональных языках: ленивые вычисления. Компилятор лениво инстанцирует члены шаблонов классов, в том числе и алиасы вроде Tail, а значит они могут ссылаться даже на текущий шаблон, но с другими аргументами.
+Пример:
 ```c++
 template<class T>
 struct FunnyStarrySequence {
@@ -31,72 +23,70 @@ struct FunnyStarrySequence {
     using Tail = FunnyStarrySequence<T*>;
 };
 ```
-Instances of this pattern describe infinite lists of the form `(T, T*, T**, T***, T****, ...)`. The entire list is not stored in compiler memory, only the pattern of fetching the next elements is stored. How many times you fetch the next element -- that's how many will be computed.
+Инстанциации этого шаблона описывают бесконечные списки вида `(T, T*, T**, T***, T****, ...)`. Весь список в памяти компилятора не хранится, хранится лишь схема получения следующих элементов. Сколько раз возьмёте следующий элемент -- столько и будет вычислено.
 
-But it is inconvenient to work with infinite type sequences alone, so let's consider the following code.
+Но с одними лишь бесконечными последовательностями типов работать неудобно, поэтому рассмотрим следующий код.
 
 ```c++
 struct Nil {};
-
-template<class TL>
-concept Empty = std::derived_from<TL, Nil>;
-
-template<class TL>
+	@@ -45,75 +45,58 @@ template<class TL>
 concept TypeList = Empty<TL> || TypeSequence<TL>;
 ```
-
-We have introduced the concept of `Empty`, describing an empty list as an arbitrary successor of `Nil`, and `TypeList`, describing a *potentially infinite list* as either empty or a sequence. Note that the implicit requirement on `TL::Tail` needs to be changed: it must satisfy the more general concept of `TypeList`, not specifically `TypeSequence`. A more correct approach would be to define `TypeList` independently of TypeSequence and treat them as independent entities. However, the chosen approach allows the compiler to guess that any sequence is also a list, which can be useful in practice when overloading functions.
-
-So, your task is to implement a set of interesting operations for working with infinite lists, in the process figuring out how to implement specific types of timelists in general.
-
-### "New" Tiplists
-
-From now on, we will call them type tuples to better distinguish them from potentially infinite sheets. In this problem, we will also need tuples in some places, but we will not write very abstruse algorithms on them. Recall that they are defined as
+Мы ввели концепт `Empty`, описывающий пустой список как произвольного наследника `Nil`, а также `TypeList`, описывающий *потенциально бесконечный список* как либо пустой, либо последовательность. Заметим что неявное требование на `TL::Tail` необходимо поменять: он обязан удовлетворять более общему концепту `TypeList`, а не именно `TypeSequence`. Более правильным подходом было бы определить `TypeList` независимо от TypeSequence и рассматривать их как независимые сущности. Однако выбранный подход позволяет компилятору догадаться, что любая последовательность также является списком, что может пригодиться на практике при перегрузке функций.
+Итак, ваша задача -- реализовать набор интересных операций для работы с бесконечными списками, в процессе догадавшись как вообще реализовывать конкретные типы тайплистов.
+### "Новые" тайплисты
+Отныне их мы будем называть тайп-тюплами (type tuple), чтобы лучше их отличать от потенциально бесконечных листов. В этой задаче тюплы нам тоже понадобятся в некоторых местах, однако сильно заумных алгоритмов на них мы писать не будем. Напомним, что определяются они как
 ```c++
 template<class... Ts>
 struct TTuple {};
 ```
-Note that all the different tuplets can be combined into one family using the `TypeTuple` concept. Familiarize yourself with its implementation in the template and think what other troubles you can do using such a technique.
+Отметим, что все различные тюплы можно объединить в одно семейство с помощью концепта `TypeTuple`. Ознакомьтесь с его реализацией в шаблоне и задумайтесь каких ещё бед вы сможете натворить используя такую технику.
 
-### Part 1: operations
+### Часть 1: операции
 
 Следующие функции должны находится в неймспейсе `type_lists`.
 
- * `Cons<T, TL>` -- a list with `T` at the beginning, and then -- the elements of the list `TL`.
- * `FromTuple<TT>`/`ToTuple<TL>` -- functions for converting between **end** lists and pipes. Will help you when debugging.
- * `Repeat<T>` -- An infinite list of `T`.
- * `Take<N, TL>` -- the first `N` elements of the potentially infinite list `TL`.
- * `Drop<N, TL>` -- everything except the first `N` elements of the list `TL`.
- * `Replicate<N, T>` -- list of `N` elements equal to `T`.
- * `Map<F, TL>` -- list from the results of applying `F` to the elements of `TL`.
- * `Filter<P, TL>` -- list only those elements of `TL` that satisfy `P<_>::Value`. The relative order of the elements must not change.
- * `Iterate<F, T>` -- list in which each next element is the result of applying the metafunction `F` to the previous one, and the first one is `T`.
- * `Cycle<TL>` -- an infinite list in which the finite list `TL` is repeated time after time.
- * `Inits<TL>` -- list of all `TL` prefixes in ascending order of length.
- * `Tails<TL>` -- list of all `TL` suffixes in ascending order of the length of their complement to the whole list.
- * `Scanl<OP, T, TL>` -- A sequence in which the first element is `T` and each subsequent element is obtained by applying `OP<_, _>::Type` to the current and next element of `TL`.
- * `Foldl<OP, T, TL>` -- type, obtained as `OP<.... OP<OP<T, TL[0]>, TL[1]> ... >`. If the sequence is infinite, the value is undefined.
- * `Zip2<L, R>` -- list of pairs of i-th elements of lists `L` and `R`, respectively, in a row.
- * `Zip<TL...>` -- a list of typles one item of fixed number from each list.
+ * `Cons<T, TL>` -- список, в начале которого стоит `T`, а дальше -- элементы списка `TL`.
+ * `FromTuple<TT>`/`ToTuple<TL>` -- функции для конвертации между **конечными** списками и тюплами. Помогут вам при дебаге.
+ * `Repeat<T>` -- бесконечный список из `T`.
+ * `Take<N, TL>` -- первые `N` элементов потенциально бесконечного списка `TL`.
+ * `Drop<N, TL>` -- всё кроме первых `N` элементов списка `TL`.
+ * `Replicate<N, T>` -- список из `N` элементов равных `T`.
+ * `Map<F, TL>` -- список из результатов применения `F` к элементам `TL`.
+ * `Filter<P, TL>` -- список лишь тех элементов `TL`, что удовлетворяют `P<_>::Value`. Относительный порядок элементов не должен меняться.
+ * `Iterate<F, T>` -- список, в котором каждый следующий элемент является результатом применения метафункции `F` к предыдущему, а первый -- `T`.
+ * `Cycle<TL>` -- бесконечный список, в котором раз за разом повторяется конечный список `TL`.
+ * `Inits<TL>` -- список всех префиксов `TL` в порядке возрастания длины.
+ * `Tails<TL>` -- список всех суффиксов `TL` в порядке возрастания длины их дополнения до всего списка.
+ * `Scanl<OP, T, TL>` -- последовательность, в которой первый элемент -- `T`, а каждый последующий получается путём применения `OP<_, _>::Type` к текущему и следующему элементу `TL`.
+ * `Foldl<OP, T, TL>` -- тип, получаемый как `OP<... OP<OP<T, TL[0]>, TL[1]> ... >`. Если последовательность бесконечная, значение не определено.
+ * `Zip2<L, R>` -- список пар из i-ых элементов списков `L` и `R` соответственно, идущих подряд.
+ * `Zip<TL...>` -- список тюплов по одному элементу фиксированного номера из каждого списка.
 
+Бонусный уровень (+1 балл):
 
- * `GroupBy<EQ, TL>` -- a list of **sequential** lists of `TL` elements that are "equal" **sequentially**, i.e. each next element must be equal to the current one (this allows, for example, to search for increasing subsequences). Equality is implied in the sense of `EQ<T, S>::Value == true`. For example, a groupbyte of letters in the word "Mississippi" by equality -- `["M", "i", "ss", "i", "ss", "i", "pp", "i"]`. If all elements of the *infinite* sequence `TL` are equal, the behavior is undefined (think about what's stopping us from defining it). Here `EQ` -- a metapredicate satisfying the axioms of equality.
+ * `GroupBy<EQ, TL>` -- список из списков **подряд** идущих элементов `TL`,  "равных" **последовательно**, т.е. каждый следующий элемент должен быть равен текущему (это позволяет, например, искать возрастающие подпоследовательности). Равенство подразумевается в смысле `EQ<T, S>::Value == true`. Например, групбай букв в слове "Mississippi" по равенству -- `["M","i","ss","i","ss","i","pp","i"]`. Если все элементы *бесконечной* последовательности `TL` равны, поведение не определено (подумайте, что нам мешает его определить). Здесь `EQ` -- метапредикат, удовлетворяющий аксиомам равентсва.
 
-### Part 2: numerical sequences
+### Часть 2: числовые последовательности
 
-Put the contents of this section into the global nymspace.
+Содержимое этого раздела поместите в глобальный неймспейс.
 
-Let's introduce a new class:
+Введём новый класс:
 ```c++
 template<auto V>
 struct ValueTag{ static constexpr auto Value = V; };
 ```
-We can use it to store values inside types, which gives us the ability to work with infinite lists of values in compile-time. Compute the following types:
-
- * `Nats` -- the natural numbers `(0, 1, 2, 3, ...)`.
- * `Fib` -- Fibonacci numbers `(0, 1, 1, 2, ...)`.
- * `Primes` -- prime numbers `(2, 3, 5, 7, ...)`.
-
-
-
-
+С его помощью мы можем хранить значения внутри типов, что даёт нам возможность работать с бесконечными списками значений в компайл тайме. Вычислите следующие типы:
+ * `Nats` -- натуральные числа `(0, 1, 2, 3, ...)`
+ * `Fib` -- числа Фибоначчи `(0, 1, 1, 2, ...)`
+ * `Primes` -- простые числа `(2, 3, 5, 7, ...)`
+По возможности используйте уже реализованные функции. Их определения поместите в файл `fun_value_sequences.hpp`. 
+## Примеры и тесты
+В общем случае сравнение на равенство бесконечных последовательностей сводится к решению проблемы останова, поэтому для дебага действуйте аналогично [тестам](https://github.com/Mrkol/metaprogramming-course/blob/master/tests/task1/main.cpp): отрезайте какой-то кусок бесконечного списка, конвертируйте в тюпл и сравнивайте их через `std::is_same`. Если внутри списка есть другие списки, обрезание и конвертацию необходимо делать рекурсивно при помощи `Map` и каррированной версии `Take`.
+## Формальности
+**Дедлайн:** 04:00 28.10.2022.
+**Баллы:** 4 + 1 уе.
+Код пушьте в ветку `task1` и делайте pull request в `master`. Не забывайте ставить проверяющего в ревьюверы.
+Обязательное требование -- по-максимуму проставлять констрейнты шаблонным аргументам, и, если это целесообразно, выделять наборы констрейнтов в концепты.
+## Предыстория
+Однажды на семинаре по тайплистам я, показывая справку по Data.List в языке haskell и прокручивая функции для бесконечных списков, сказал "это всё не то, это мы не умеем". Оказывается, умеем! В результате нескольких дней экспериментов было выяснено, что бесконечные списки таки можно реализовать, и выглядит оно очень даже ничего. Конечно полезность данного "изобретения" под вопросом, однако для тренировки самое то.
