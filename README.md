@@ -9,7 +9,11 @@
 
 ```c++
 
-	@@ -17,23 +17,23 @@ concept TypeSequence =
+template<class TL>
+concept TypeSequence =
+    requires {
+        typename TL::Head;
+        typename TL::Tail;
     };
 ```
 Утверждается, что он описывает *бесконечные последовательности типов*. От `TL::Tail` также неявно требуется удовлетворять концепту `TypeSequence`, однако смоделировать это на C++20 скорее всего не возможно.
