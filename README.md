@@ -1,42 +1,42 @@
-Задача 3. A very clever non-pointer
+Задача 3. Очень умный неуказатель
 ========================
 
 
-## Problem
+## Задача
 
-Implement a Spy template class that wraps an arbitrary object and logs calls to it.
+Реализуйте шаблонный класс Spy, оборачивающий произвольный объект и логирующий обращения к нему.
 
-The wrapped entity needs to be stored *by value*. It was rightly pointed out 2 years ago that it is wrong to call such entities pointers, so we will call them smart non-pointers.
+Оборачиваемый объект необходимо хранить *по значению*. 2 года назад справедливо заметили, что называть такие сущности указателями неправильно, поэтому мы будем называть их умными неуказателями.
 
-If `s` &mdash; a value of type `Spy<T>`, the expression `s->member` shall result in a call to the non-static member `member` of the wrapped object.
+Если `s` &mdash; значение типа `Spy<T>`,  выражение `s->member` должно приводить к обращению к нестатическому члену `member` оборачиваемого объекта.
 
-### Loggers
+### Логеры
 
-The `setLogger` method sets the logger. After evaluating each expression containing references to the wrapped object via `operator ->`, the logger should be called if it is set. The logger takes as an argument the number of accesses to the object when evaluating the expression.
+Метод `setLogger` устанавливает логер. После вычисления каждого выражения, содержащего обращения к оборачиваемому объекту через `operator ->`, должен вызываться логер, если он установлен. В качестве аргумента логер принимает количество обращений к объекту при вычислении выражения.
 
-Addresses via `operator *` are not logged.
+Обращения через `operator *` не логируются.
 
-If the wrapped type `T` is not copyable, then `Spy<T>` must support move-only loggers.
+Если оборачиваемый тип `T` не копируемый, то `Spy<T>` должен поддерживать move-only логеры.
 
-If the wrapped object is accessed and the logger is changed in the same expression, the behavior is undefined.
+Если в одном выражении происходит обращение к оборачиваемому объекту и изменяется логер, поведение не определено.
 
-Using `std::function` and `std::any` in this task is prohibited.
+Использовать `std::function` и `std::any` в этом задании запрещено.
 
-### Saving concepts
+### Сохранение концептов
 
-We will say that a smart non-pointer `W` preserves a concept `C` if for any type `T`
+Будем говорить, что умный неуказатель `W` сохраняет концепт `C`, если для любого типа `T`
 
-1) `T` satisfies `C` &rArr; `W<T>` satisfies `C`,
-2) `T` models `C` &rArr; `W<T>` models `C`.
+1) `T` удовлетворяет `C` &rArr; `W<T>` удовлетворяет `C`,
+2) `T` моделирует `C` &rArr; `W<T>` моделирует `C`.
 
-Your `Spy` must preserve the basic object concepts: `std::movable`, `std::copyable`, `std::semiregular`, `std::regular`. To do this, you can impose additional constraints on the template argument of the `setLogger` method.
+Ваш `Spy` должен сохранять основные объектные концепты: `std::movable`, `std::copyable`, `std::semiregular`, `std::regular`. Для этого можно накладывать дополнительные ограничения на шаблонный аргумент метода `setLogger`.
 
-Comparison operators must compare wrapped objects, ignoring the logger. When copying (moving), both the logger and the wrapped object must be copied (moved).
+Операторы сравнения должны сравнивать оборачиваемые объекты, игнорируя логер. При копировании (перемещении) должны копироваться (перемещаться) и логер, и оборачиваемый объект.
 
-If a wrapped object is accessed and a non-pointer is moved in the same expression, the behavior is undefined. Copying creates a new object, which must be accessed _separately_.
+Если в одном выражении происходит обращение к оборачиваемому объекту и перемещение неуказателя, поведение не определено. Копирование создаёт новый объект, обращения к которому должны учитываться _отдельно_.
 
 
-## Example
+## Пример
 
 ```c++
 struct Holder {
@@ -45,37 +45,24 @@ struct Holder {
         return x > 0;
     }
 };
-
 Spy s{Holder{}};
 static_assert(std::semiregular<decltype(s)>);
-
 s.setLogger([](auto n) { std::cout << n << std::endl; });
-
 s->isPositive() && s->x--; // prints 1
 s->x++ + s->x++; // prints 2
 s->isPositive() && s->x--; // prints 2
-
 s.setLogger([dummy = std::unique_ptr<int>()](auto n) {}); // compilation error
-
 // -----------------------------------
-
 struct MoveOnly {
     MoveOnly() = default;
-
     MoveOnly(MoveOnly&&) = default;
     MoveOnly& operator =(MoveOnly&&) = default;
-
     MoveOnly(const MoveOnly&) = delete;
     MoveOnly& operator =(const MoveOnly&) = delete;
-
     ~MoveOnly() noexcept = default;
 };
-
 Spy t{MoveOnly{}};
-
 s.setLogger([dummy = std::unique_ptr<int>()](auto n) {}); // ok
-
 static_assert(std::movable<decltype(t)>);
 static_assert(!std::copyable<decltype(t)>);
 ```
-
